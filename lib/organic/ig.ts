@@ -1,11 +1,13 @@
 import { env } from "./env";
 
-const BASE = `https://graph.facebook.com/${env.GRAPH_API_VERSION}`;
+function base() {
+  return `https://graph.facebook.com/${env.GRAPH_API_VERSION}`;
+}
 
 type QueryParams = Record<string, string | number | undefined>;
 
 async function graph<T>(path: string, params: QueryParams = {}): Promise<T> {
-  const url = new URL(`${BASE}${path}`);
+  const url = new URL(`${base()}${path}`);
   url.searchParams.set("access_token", env.IG_ACCESS_TOKEN);
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined) url.searchParams.set(k, String(v));

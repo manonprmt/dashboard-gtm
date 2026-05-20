@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { KpiCard } from "@/components/organic/KpiCard";
 import { RangePicker } from "@/components/organic/RangePicker";
 import { YearlyBarChart } from "@/components/organic/YearlyBarChart";
@@ -104,7 +105,9 @@ export default async function OrganicPage({
               </p>
             )}
           </div>
-          <RangePicker defaultMonth={fmtMonthInput(range.start)} />
+          <Suspense fallback={null}>
+            <RangePicker defaultMonth={fmtMonthInput(range.start)} />
+          </Suspense>
         </div>
 
         {/* Primary KPIs */}

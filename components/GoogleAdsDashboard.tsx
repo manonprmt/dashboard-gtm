@@ -16,8 +16,9 @@ const googleAdsDataN1: GoogleAdsRow[] | null = null;
 
 // ─── Period presets (cosmetic — data has no date column) ─────────────────────
 const PERIODS = [
-  { value: 'all', label: 'Jan–Mai 2026' },
-  { value: 'n1',  label: 'Jan–Mai 2025 (N-1)', disabled: true },
+  { value: '7d',  label: '7 derniers jours' },
+  { value: '14d', label: '14 derniers jours' },
+  { value: '30d', label: '30 jours' },
 ] as const;
 type Period = typeof PERIODS[number]['value'];
 
@@ -208,7 +209,7 @@ function CampaignTable({ data, dataN1, showN1 }: { data: GoogleAdsRow[]; dataN1:
 
 export default function GoogleAdsDashboard() {
   const [partner, setPartner] = useState<Partner>('Tous');
-  const [period, setPeriod]   = useState<Period>('all');
+  const [period, setPeriod]   = useState<Period>('30d');
   const [showN1, setShowN1]   = useState(false);
 
   const filtered   = partner === 'Tous' ? googleAdsData   : googleAdsData.filter((r) => r.partner === partner);
@@ -231,15 +232,9 @@ export default function GoogleAdsDashboard() {
               {PERIODS.map((p) => (
                 <button
                   key={p.value}
-                  onClick={() => !('disabled' in p && p.disabled) && setPeriod(p.value)}
-                  disabled={'disabled' in p && p.disabled}
-                  title={'disabled' in p && p.disabled ? 'Importer un export N-1 pour activer' : undefined}
+                  onClick={() => setPeriod(p.value)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    period === p.value
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'disabled' in p && p.disabled
-                      ? 'text-gray-300 cursor-not-allowed'
-                      : 'text-gray-500 hover:text-gray-700'
+                    period === p.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
                   {p.label}

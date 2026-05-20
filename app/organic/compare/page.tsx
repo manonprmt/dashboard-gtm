@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ComparePicker } from "@/components/organic/ComparePicker";
 import { CompareTable } from "@/components/organic/CompareTable";
 import {
@@ -69,7 +70,9 @@ export default async function OrganicComparePage({
         </div>
 
         <div className="mb-8">
-          <ComparePicker />
+          <Suspense fallback={null}>
+            <ComparePicker />
+          </Suspense>
         </div>
 
         <CompareTable a={aKpis} b={bKpis} aLabel={a.label} bLabel={b.label} />
