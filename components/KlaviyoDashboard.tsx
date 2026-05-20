@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { klaviyoData, repeatRateData, parseCampaignLabel, parseSegment, type KlaviyoCampaign, type RepeatRateRow } from '@/lib/klaviyoData';
+import { klaviyoData, repeatRateData, incrementData, parseCampaignLabel, parseSegment, type KlaviyoCampaign, type RepeatRateRow, type IncrementRow } from '@/lib/klaviyoData';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -138,90 +138,115 @@ function CampaignTable({ data }: { data: KlaviyoCampaign[] }) {
   );
 }
 
-// ─── Tab 3: Incrément YTD ────────────────────────────────────────────────────
+// ─── Tab 3: Incrément Klaviyo ─────────────────────────────────────────────────
 
-function IncrementView({ data }: { data: KlaviyoCampaign[] }) {
-  const segments = ['CVS', 'WG', 'US'] as const;
-  const channels = ['EMAIL', 'PUSH'] as const;
+const platformIcon = (p: string) => p === 'iOS' ? '🍎' : p === 'Android' ? '🤖' : '🌐';
 
-  const totals = useMemo(() => {
-    const totalOrders = data.reduce((s, r) => s + r.orders_attribuees, 0);
-    const totalCA = data.reduce((s, r) => s + r.ca_attribue, 0);
-    const totalSent = data.reduce((s, r) => s + r.nb_sent, 0);
-    return { totalOrders, totalCA, totalSent };
-  }, [data]);
+function RateBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const pct = Math.round((value / max) * 100);
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-gray-500 w-24 shrink-0 text-right">{label}</span>
+      <div className="flex-1 bg-gray-100 rounded-full h-5 relative overflow-hidden">
+        <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${pct}%` }} />
+        <span className="absolute inset-0 flex items-center justify-end pr-2 text-xs font-bold text-white mix-blend-difference">{value}%</span>
+      </div>
+    </div>
+  );
+}
 
-  const bySegmentChannel = useMemo(() => {
-    return segments.map((seg) => {
-      const segRows = data.filter((r) => parseSegment(r.campaign_name) === seg);
-      return {
-        segment: seg,
-        channels: channels.map((ch) => {
-          const rows = segRows.filter((r) => r.channel === ch);
-          return {
-            channel: ch,
-            orders: rows.reduce((s, r) => s + r.orders_attribuees, 0),
-            ca: rows.reduce((s, r) => s + r.ca_attribue, 0),
-            sent: rows.reduce((s, r) => s + r.nb_sent, 0),
-          };
-        }),
-        orders: segRows.reduce((s, r) => s + r.orders_attribuees, 0),
-        ca: segRows.reduce((s, r) => s + r.ca_attribue, 0),
-      };
+function IncrementView() {
+  const totalIncrement = incrementData.reduce((s, r) => s + r.nb_orders_increment, 0);
+
+  const visualPartners = ['CVS', 'Walgreens'];
+  const visualData = useMemo(() => {
+    return visualPartners.map((partner) => {
+      const rows = incrementData.filter((r) => r.partner === partner);
+      const maxRate = Math.max(...rows.map((r) => r.repeat_rate_exposed));
+      return { partner, rows, maxRate };
     });
-  }, [data]);
-
-  const segmentColors: Record<string, string> = {
-    CVS: 'bg-blue-50 border-blue-200',
-    WG: 'bg-emerald-50 border-emerald-200',
-    US: 'bg-rose-50 border-rose-200',
-  };
-  const segmentText: Record<string, string> = {
-    CVS: 'text-blue-700',
-    WG: 'text-emerald-700',
-    US: 'text-rose-700',
-  };
+  }, []);
 
   return (
-    <div className="space-y-5">
-      {/* Global KPIs */}
-      <div className="grid grid-cols-3 gap-4">
-        <KpiCard label="CA total attribué YTD" value={fmtCurrency(totals.totalCA)} icon={<IconDollar />} color="bg-violet-100 text-violet-600" />
-        <KpiCard label="Orders totales YTD" value={fmt(totals.totalOrders)} icon={<IconCart />} color="bg-violet-100 text-violet-600" />
-        <KpiCard label="Envois totaux YTD" value={fmt(totals.totalSent)} icon={<IconSend />} color="bg-violet-100 text-violet-600" />
+    <div className="space-y-6">
+      {/* Global KPI */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <KpiCard label="Orders incrémentales Klaviyo" value={fmt(totalIncrement)} icon={<IconCart />} color="bg-violet-100 text-violet-600" />
+        <KpiCard label="Uplift moyen taux de repeat" value={`+${(incrementData.reduce((s,r)=>s+r.increment_pts,0)/incrementData.length).toFixed(1)} pts`} icon={<IconRepeat />} color="bg-violet-100 text-violet-600" />
       </div>
 
-      {/* By segment */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {bySegmentChannel.map(({ segment, channels: chs, orders, ca }) => (
-          <div key={segment} className={`rounded-2xl border-2 ${segmentColors[segment]} overflow-hidden`}>
-            <div className={`px-4 py-2.5 flex items-center justify-between`}>
-              <span className={`font-bold text-sm uppercase tracking-widest ${segmentText[segment]}`}>{segment}</span>
-              <div className="text-right">
-                <p className="text-xs text-gray-400">CA total</p>
-                <p className={`font-bold text-sm ${segmentText[segment]}`}>{fmtCurrency(ca)}</p>
-              </div>
+      {/* Visual: repeat rate avec vs sans Klaviyo — CVS & Walgreens */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {visualData.map(({ partner, rows, maxRate }) => (
+          <div key={partner} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="font-bold text-sm text-gray-800">{partner}</h3>
+              <span className="text-xs text-gray-400">Taux de repeat</span>
             </div>
-            <div className="bg-white divide-y divide-gray-100">
-              {chs.map(({ channel, orders: o, ca: c, sent }) => (
-                <div key={channel} className="px-4 py-2.5 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${channel === 'EMAIL' ? 'bg-violet-100 text-violet-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {channel === 'EMAIL' ? '✉' : '🔔'} {channel}
-                    </span>
+            <div className="p-5 space-y-4">
+              {rows.map((row) => (
+                <div key={row.id} className="space-y-1.5">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-sm">{platformIcon(row.platform)}</span>
+                    <span className="text-xs font-semibold text-gray-700">{row.platform}</span>
+                    <span className="ml-auto text-xs font-bold text-violet-600">+{row.increment_pts} pts</span>
                   </div>
-                  <div className="text-right text-xs text-gray-600 space-y-0.5">
-                    <p><span className="font-semibold">{fmtCurrency(c)}</span> CA</p>
-                    <p><span className="font-medium">{fmt(o)}</span> orders · {fmt(sent)} envois</p>
-                  </div>
+                  <RateBar label="Avec Klaviyo" value={row.repeat_rate_exposed} max={maxRate + 5} color="bg-violet-500" />
+                  <RateBar label="Sans Klaviyo" value={row.repeat_rate_control} max={maxRate + 5} color="bg-gray-300" />
                 </div>
               ))}
             </div>
-            <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 text-right">
-              <span className="text-xs text-gray-500">{fmt(orders)} orders total</span>
-            </div>
           </div>
         ))}
+      </div>
+
+      {/* Full table */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 bg-gray-50 border-b border-gray-100">
+          <h3 className="font-bold text-sm text-gray-800">Détail par brand · partenaire · plateforme</h3>
+        </div>
+        <div className="overflow-x-auto scrollbar-thin">
+          <table className="w-full text-sm">
+            <thead className="border-b border-gray-200">
+              <tr>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Brand</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Partenaire</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Plateforme</th>
+                <th className="px-3 py-2.5 text-center text-xs font-semibold text-violet-600 uppercase tracking-wide whitespace-nowrap">Avec Klaviyo</th>
+                <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Sans Klaviyo</th>
+                <th className="px-3 py-2.5 text-center text-xs font-semibold text-green-600 uppercase tracking-wide whitespace-nowrap">Uplift</th>
+                <th className="px-3 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Orders incrémentales</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {incrementData.map((row) => (
+                <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-3 py-2.5 text-xs font-medium text-gray-500">{row.brand}</td>
+                  <td className="px-3 py-2.5 font-semibold text-gray-800">{row.partner}</td>
+                  <td className="px-3 py-2.5">
+                    <span className="text-xs">{platformIcon(row.platform)} {row.platform}</span>
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    <span className="font-bold text-violet-700">{row.repeat_rate_exposed}%</span>
+                  </td>
+                  <td className="px-3 py-2.5 text-center text-gray-500">{row.repeat_rate_control}%</td>
+                  <td className="px-3 py-2.5 text-center">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${row.increment_pts >= 8 ? 'bg-green-100 text-green-700' : row.increment_pts >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
+                      +{row.increment_pts} pts
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-semibold text-gray-800 tabular-nums">{fmt(row.nb_orders_increment)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="border-t-2 border-gray-200 bg-gray-50">
+              <tr>
+                <td colSpan={6} className="px-3 py-2.5 text-xs font-semibold text-gray-600 uppercase">Total</td>
+                <td className="px-3 py-2.5 text-right font-bold text-violet-700 tabular-nums">{fmt(totalIncrement)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -404,7 +429,7 @@ export default function KlaviyoDashboard() {
           </>
         )}
         {activeTab === 'detail' && <CampaignTable data={filtered} />}
-        {activeTab === 'increment' && <IncrementView data={filtered} />}
+        {activeTab === 'increment' && <IncrementView />}
         {activeTab === 'repeat' && <RepeatRateView />}
       </div>
     </div>

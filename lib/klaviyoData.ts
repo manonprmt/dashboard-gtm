@@ -42,6 +42,31 @@ export function parseSegment(campaign_name: string): Segment {
   return 'US';
 }
 
+// ─── Increment data ───────────────────────────────────────────────────────────
+
+export interface IncrementRow {
+  id: string;
+  brand: string;
+  partner: string;
+  platform: string;
+  repeat_rate_exposed: number;
+  repeat_rate_control: number;
+  increment_pts: number;
+  nb_orders_increment: number;
+}
+
+export const incrementData: IncrementRow[] = [
+  { id: 'pp-cvs-and',  brand: 'PHOTOPRINT', partner: 'CVS',        platform: 'Android', repeat_rate_exposed: 29, repeat_rate_control: 22, increment_pts: 7,  nb_orders_increment: 450   },
+  { id: 'pp-cvs-ios',  brand: 'PHOTOPRINT', partner: 'CVS',        platform: 'iOS',     repeat_rate_exposed: 28, repeat_rate_control: 20, increment_pts: 8,  nb_orders_increment: 13946 },
+  { id: 'pp-cvs-web',  brand: 'PHOTOPRINT', partner: 'CVS',        platform: 'Web',     repeat_rate_exposed: 12, repeat_rate_control: 8,  increment_pts: 4,  nb_orders_increment: 2947  },
+  { id: 'pp-wg-and',   brand: 'PHOTOPRINT', partner: 'Walgreens',  platform: 'Android', repeat_rate_exposed: 38, repeat_rate_control: 31, increment_pts: 7,  nb_orders_increment: 422   },
+  { id: 'pp-wg-ios',   brand: 'PHOTOPRINT', partner: 'Walgreens',  platform: 'iOS',     repeat_rate_exposed: 34, repeat_rate_control: 22, increment_pts: 12, nb_orders_increment: 14622 },
+  { id: 'pp-wg-web',   brand: 'PHOTOPRINT', partner: 'Walgreens',  platform: 'Web',     repeat_rate_exposed: 15, repeat_rate_control: 7,  increment_pts: 8,  nb_orders_increment: 317   },
+  { id: 'us-cvs-web',  brand: 'PICTA_US',   partner: 'CVS',        platform: 'Web',     repeat_rate_exposed: 7,  repeat_rate_control: 6,  increment_pts: 1,  nb_orders_increment: 151   },
+  { id: 'us-fuji-web', brand: 'PICTA_US',   partner: 'Fujifilm US',platform: 'Web',     repeat_rate_exposed: 5,  repeat_rate_control: 4,  increment_pts: 2,  nb_orders_increment: 15    },
+  { id: 'us-wg-web',   brand: 'PICTA_US',   partner: 'Walgreens',  platform: 'Web',     repeat_rate_exposed: 9,  repeat_rate_control: 8,  increment_pts: 1,  nb_orders_increment: 181   },
+];
+
 // ─── Repeat rate data ─────────────────────────────────────────────────────────
 
 export interface RepeatRateRow {
