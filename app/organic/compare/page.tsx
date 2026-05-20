@@ -13,6 +13,12 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+const REQUIRED_VARS = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "IG_BUSINESS_ID", "IG_ACCESS_TOKEN"];
+
+function isConfigured() {
+  return REQUIRED_VARS.every((v) => Boolean(process.env[v]));
+}
+
 type Params = {
   preset?: "mom" | "yoy" | "custom";
   aFrom?: string;
@@ -36,6 +42,18 @@ export default async function OrganicComparePage({
 }: {
   searchParams: Promise<Params>;
 }) {
+  if (!isConfigured()) {
+    return (
+      <div className="bg-ink-50 min-h-full flex items-center justify-center">
+        <div className="text-center py-20 px-6">
+          <div className="text-4xl mb-4">🔧</div>
+          <h1 className="font-display text-2xl text-primary-800 mb-2">Organic dashboard not configured</h1>
+          <p className="text-ink-500 text-sm">Add the required environment variables on Vercel to enable this section.</p>
+        </div>
+      </div>
+    );
+  }
+
   const sp = await searchParams;
   const { a, b } = resolve(sp);
   const [aKpis, bKpis] = await Promise.all([getKpis(a), getKpis(b)]);

@@ -22,6 +22,39 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+const REQUIRED_VARS = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "IG_BUSINESS_ID", "IG_ACCESS_TOKEN"];
+
+function isConfigured() {
+  return REQUIRED_VARS.every((v) => Boolean(process.env[v]));
+}
+
+function NotConfigured() {
+  return (
+    <div className="bg-ink-50 min-h-full">
+      <div className="max-w-[800px] mx-auto px-6 py-20 text-center">
+        <div className="text-4xl mb-4">🔧</div>
+        <h1 className="font-display text-3xl text-primary-800 mb-3">Organic dashboard not configured</h1>
+        <p className="text-ink-500 mb-8 text-sm leading-relaxed">
+          This section requires Instagram and Supabase credentials to be set as environment variables on Vercel.
+        </p>
+        <div className="bg-white rounded-2xl border border-ink-200 p-6 text-left text-sm font-mono space-y-2 text-ink-700">
+          {REQUIRED_VARS.map((v) => (
+            <div key={v} className="flex items-center gap-3">
+              <span className={process.env[v] ? "text-green-600" : "text-red-500"}>
+                {process.env[v] ? "✓" : "✗"}
+              </span>
+              <span>{v}</span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 text-xs text-ink-400">
+          Add these in Vercel → Project Settings → Environment Variables, then redeploy.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function rangeFromSearch(sp: { month?: string; from?: string; to?: string }) {
   if (sp.from && sp.to) return customRange(sp.from, sp.to);
   if (sp.month) {
@@ -36,6 +69,8 @@ export default async function OrganicPage({
 }: {
   searchParams: Promise<{ month?: string; from?: string; to?: string }>;
 }) {
+  if (!isConfigured()) return <NotConfigured />;
+
   const sp = await searchParams;
   const range = rangeFromSearch(sp);
   const isCurrentMonth = range.start.getTime() === currentMonth().start.getTime();
