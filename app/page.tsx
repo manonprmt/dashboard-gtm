@@ -1,5 +1,5 @@
-import Dashboard from '@/components/Dashboard';
+import KlaviyoDashboard from '@/components/KlaviyoDashboard';
 
 export default function Home() {
-  return <Dashboard />;
+  return <KlaviyoDashboard />;
 }
