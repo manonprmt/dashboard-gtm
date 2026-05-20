@@ -108,7 +108,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-ink-50">
       {/* ── Sidebar ── */}
       <aside className="w-[220px] flex-shrink-0 bg-slate-900 flex flex-col">
         {/* Brand */}

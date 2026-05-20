@@ -727,9 +727,9 @@ export default function Dashboard() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ink-50">
       {/* ── Header ── */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
+      <header className="bg-white/80 backdrop-blur border-b border-ink-200/70 sticky top-0 z-20">
         <div className="max-w-screen-2xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow">
@@ -738,8 +738,8 @@ export default function Dashboard() {
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900 leading-tight">Meta Ads Dashboard</h1>
-              <p className="text-xs text-gray-400">
+              <h1 className="font-display text-lg text-primary-800 leading-tight">Meta Ads</h1>
+              <p className="text-xs text-ink-400">
                 {loading
                   ? 'Chargement…'
                   : lastUpdated
@@ -750,16 +750,16 @@ export default function Dashboard() {
           </div>
 
           {/* Date preset selector */}
-          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+          <div className="flex items-center gap-1 bg-ink-100 p-1 rounded-full">
             {DATE_PRESETS.map((preset) => (
               <button
                 key={preset.value}
                 onClick={() => setDatePreset(preset.value)}
                 disabled={loading}
-                className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all disabled:opacity-50 ${
+                className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all disabled:opacity-50 ${
                   datePreset === preset.value
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-white text-primary-800 shadow-sm'
+                    : 'text-ink-500 hover:text-ink-700'
                 }`}
               >
                 {preset.label}
@@ -770,7 +770,7 @@ export default function Dashboard() {
           <button
             onClick={fetchData}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-700 text-white text-sm font-semibold hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm"
           >
             <IconRefresh spin={loading} />
             {loading ? 'Actualisation…' : 'Actualiser'}
@@ -780,7 +780,7 @@ export default function Dashboard() {
       </header>
 
       {/* ── Tab navigation ── */}
-      <div className="bg-white border-b border-gray-200 sticky top-[73px] z-10">
+      <div className="bg-white/80 border-b border-ink-200/70 sticky top-[73px] z-10">
         <div className="max-w-screen-2xl mx-auto px-6 flex gap-0">
           {([
             { key: 'apercu',      label: 'Aperçu',       icon: '📊' },
@@ -794,8 +794,8 @@ export default function Dashboard() {
               onClick={() => setMainTab(tab.key)}
               className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold border-b-2 transition-all ${
                 mainTab === tab.key
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary-600 text-primary-700'
+                  : 'border-transparent text-ink-500 hover:text-ink-700 hover:border-ink-300'
               }`}
             >
               <span>{tab.icon}</span>
