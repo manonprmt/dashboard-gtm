@@ -34,6 +34,43 @@ export const klaviyoData: KlaviyoCampaign[] = [
   { id: '01KRE42KC75EA1WMVBZH15AYB6', channel: 'PUSH', campaign_name: '20260513_push_graduation_wg', campaign_date: '2026-05-13', nb_sent: 252642, nb_open: 2465, nb_click: 0, taux_open_pct: 0.98, taux_click_pct: 0, orders_attribuees: 336, ca_attribue: 6008.19, panier_moyen: 17.88, revenu_par_envoi: 0.02 },
 ];
 
+export type Segment = 'CVS' | 'WG' | 'US';
+
+export function parseSegment(campaign_name: string): Segment {
+  if (campaign_name.endsWith('_cvs')) return 'CVS';
+  if (campaign_name.endsWith('_wg')) return 'WG';
+  return 'US';
+}
+
+// ─── Repeat rate data ─────────────────────────────────────────────────────────
+
+export interface RepeatRateRow {
+  id: string;
+  app_package: string;
+  partner: string;
+  platform: string;
+  base_m3: number;
+  repeat_rate_m3: number;
+  base_m6: number;
+  repeat_rate_m6: number;
+  base_m9: number;
+  repeat_rate_m9: number | null;
+}
+
+export const repeatRateData: RepeatRateRow[] = [
+  { id: 'wg-ios',      app_package: 'com.pictarine.Photo-Print',       partner: 'Walgreens', platform: 'iOS',     base_m3: 272981, repeat_rate_m3: 25.8, base_m6: 215349, repeat_rate_m6: 32.7, base_m9: 157236, repeat_rate_m9: 36   },
+  { id: 'cvs-ios',     app_package: 'com.pictarine.Photo-Print.cvs',    partner: 'CVS',       platform: 'iOS',     base_m3: 390903, repeat_rate_m3: 21.7, base_m6: 237734, repeat_rate_m6: 31.6, base_m9: 157781, repeat_rate_m9: 35   },
+  { id: 'wg-android',  app_package: 'com.pictarine.photoprint',         partner: 'Walgreens', platform: 'Android', base_m3: 106495, repeat_rate_m3: 23.1, base_m6: 97824,  repeat_rate_m6: 27.2, base_m9: 66332,  repeat_rate_m9: 29.4 },
+  { id: 'cvs-android', app_package: 'com.pictarine.photoprint.cvs',     partner: 'CVS',       platform: 'Android', base_m3: 66649,  repeat_rate_m3: 13.8, base_m6: 25721,  repeat_rate_m6: 25.5, base_m9: 17721,  repeat_rate_m9: 27.8 },
+  { id: 'wg-web',      app_package: 'com.pictarine.webApp',             partner: 'Walgreens', platform: 'Web',     base_m3: 803061, repeat_rate_m3: 7.5,  base_m6: 768517, repeat_rate_m6: 7.9,  base_m9: 611529, repeat_rate_m9: 8.1  },
+  { id: 'cvs-web',     app_package: 'com.pictarine.webApp.cvs',         partner: 'CVS',       platform: 'Web',     base_m3: 679949, repeat_rate_m3: 7.4,  base_m6: 443049, repeat_rate_m6: 7.7,  base_m9: 302257, repeat_rate_m9: 8.0  },
+  { id: 'picta-web',   app_package: 'com.pictarine.webApp.picta',       partner: 'Picta',     platform: 'Web',     base_m3: 8802,   repeat_rate_m3: 10.2, base_m6: 8802,   repeat_rate_m6: 10.4, base_m9: 7113,   repeat_rate_m9: 9.7  },
+  { id: 'picta-us',    app_package: 'com.pictarine.webApp.picta.us',    partner: 'Picta US',  platform: 'Web',     base_m3: 278530, repeat_rate_m3: 4.5,  base_m6: 199406, repeat_rate_m6: 4.5,  base_m9: 127842, repeat_rate_m9: 4.6  },
+  { id: 'picta-ca',    app_package: 'com.pictarine.webApp.picta.ca',    partner: 'Picta CA',  platform: 'Web',     base_m3: 53,     repeat_rate_m3: 1.9,  base_m6: 51,     repeat_rate_m6: 2.0,  base_m9: 1,      repeat_rate_m9: 0    },
+  { id: 'picta-fr',    app_package: 'com.pictarine.webApp.picta.fr',    partner: 'Picta FR',  platform: 'Web',     base_m3: 91,     repeat_rate_m3: 1.1,  base_m6: 91,     repeat_rate_m6: 1.1,  base_m9: 0,      repeat_rate_m9: null },
+  { id: 'picta-uk',    app_package: 'com.pictarine.webApp.picta.uk',    partner: 'Picta UK',  platform: 'Web',     base_m3: 405,    repeat_rate_m3: 1.7,  base_m6: 399,    repeat_rate_m6: 1.3,  base_m9: 0,      repeat_rate_m9: null },
+];
+
 export function parseCampaignLabel(name: string): string {
   // e.g. "20260501_email_mday-exclusive-offer_cvs" → "Mday Exclusive Offer · CVS"
   const parts = name.split('_');
