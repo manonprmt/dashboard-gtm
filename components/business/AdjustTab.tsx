@@ -54,9 +54,9 @@ function DonutChart({ data, partner }: { data: AdjustRow[]; partner: Partner }) 
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number, name: string) => [
-                `${fmt(value)} installs`,
-                name,
+              formatter={(value, name) => [
+                `${fmt(Number(value))} installs`,
+                String(name),
               ]}
               contentStyle={{
                 background: '#1C1917',
