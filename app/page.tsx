@@ -1,5 +1,5 @@
-import KlaviyoDashboard from '@/components/KlaviyoDashboard';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return <KlaviyoDashboard />;
+  redirect('/meta');
 }

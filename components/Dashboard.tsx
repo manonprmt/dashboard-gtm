@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import type { ReactNode } from 'react';
 import MetricCard from './MetricCard';
@@ -187,7 +186,6 @@ interface FetchErrors {
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const router = useRouter();
   const [campaigns, setCampaigns]     = useState<Campaign[]>([]);
   const [adsets, setAdsets]           = useState<AdSet[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -778,21 +776,6 @@ export default function Dashboard() {
             {loading ? 'Actualisation…' : 'Actualiser'}
           </button>
 
-          {/* Logout */}
-          <button
-            onClick={async () => {
-              await fetch('/api/auth/logout', { method: 'POST' });
-              router.push('/login');
-              router.refresh();
-            }}
-            title="Déconnexion"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 transition-all"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </button>
         </div>
       </header>
 
