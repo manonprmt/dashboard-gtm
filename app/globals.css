@@ -11,6 +11,63 @@
   body {
     @apply bg-gray-50 text-gray-900;
   }
+
+  /* Picta Organic color CSS variables — used by Recharts charts */
+  :root {
+    --color-primary-50: #F7F0FF;
+    --color-primary-100: #EAD6FF;
+    --color-primary-200: #D3ACFF;
+    --color-primary-300: #B87AFF;
+    --color-primary-400: #A15CFE;
+    --color-primary-500: #9843FE;
+    --color-primary-600: #7F23F0;
+    --color-primary-700: #6412CC;
+    --color-primary-800: #4801A0;
+    --color-primary-900: #301277;
+
+    --color-secondary-50: #FFECEF;
+    --color-secondary-500: #FF4638;
+
+    --color-tertiary-50: #FDEAE6;
+    --color-tertiary-500: #FF680F;
+
+    --color-ink-50: #FAFAF9;
+    --color-ink-100: #F5F5F4;
+    --color-ink-200: #E7E5E4;
+    --color-ink-300: #D6D3D1;
+    --color-ink-400: #A8A29E;
+    --color-ink-500: #78716C;
+    --color-ink-600: #57534E;
+    --color-ink-700: #44403C;
+    --color-ink-800: #292524;
+    --color-ink-900: #1C1917;
+
+    --color-success-50: #E9F5E9;
+    --color-success-700: #154718;
+    --color-error-50: #FCEFF0;
+    --color-error-700: #8A192C;
+  }
+}
+
+/* Picta Organic typography and card utility classes */
+.font-display {
+  font-family: var(--font-bricolage, ui-sans-serif, system-ui, sans-serif);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.font-script {
+  font-family: var(--font-script, cursive);
+  font-weight: 600;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.card {
+  box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04);
 }
 
 @layer utilities {

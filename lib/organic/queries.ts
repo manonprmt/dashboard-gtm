@@ -1,0 +1,359 @@
+import { supabaseAdmin } from "./supabase";
+import { fetchAccountProfileViewsTotal } from "./ig";
+import type { DateRange } from "./dates";
+
+export type Kpis = {
+  reels_posted: number;
+  static_posted: number;
+  followers_end: number | null;
+  followers_delta: number | null;
+  page_visits: number;
+  organic_reach: number;
+  total_views: number;
+  reel_views: number;
+  story_views: number;
+  saves: number;
+  shares: number;
+  likes: number;
+  comments: number;
+  replies: number;
+  profile_visits: number;
+  engagement_rate: number;
+};
+
+export type TopPost = {
+  id: string;
+  ig_id: string;
+  kind: "static" | "reel";
+  caption: string | null;
+  permalink: string | null;
+  thumbnail_url: string | null;
+  published_at: string;
+  views: number;
+  reach: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  engagement_rate: number;
+};
+
+type StoryImportRow = {
+  ig_id: string | null;
+  published_at: string;
+  views: number;
+  reach: number;
+  likes: number;
+  shares: number;
+  replies: number;
+  profile_visits: number;
+  sticker_taps: number;
+};
+
+type PostRow = {
+  id: string;
+  ig_id: string;
+  kind: "static" | "reel" | "story";
+  caption: string | null;
+  permalink: string | null;
+  thumbnail_url: string | null;
+  published_at: string;
+  post_metrics: {
+    views: number;
+    reach: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    saves: number;
+    reposts: number;
+    profile_visits: number;
+    follows: number;
+  } | null;
+};
+
+async function fetchPostsInRange(range: DateRange): Promise<PostRow[]> {
+  const db = supabaseAdmin();
+  const { data, error } = await db
+    .from("instagram_posts")
+    .select(
+      "id, ig_id, kind, caption, permalink, thumbnail_url, published_at, instagram_post_metrics(views, reach, likes, comments, shares, saves, reposts, profile_visits, follows)",
+    )
+    .eq("is_owner", true)
+    .eq("is_boosted", false)
+    .gte("published_at", range.start.toISOString())
+    .lt("published_at", range.end.toISOString())
+    .order("published_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, unknown>) => {
+    const joined = r.instagram_post_metrics;
+    return {
+      ...r,
+      post_metrics: Array.isArray(joined) ? (joined[0] ?? null) : (joined ?? null),
+    };
+  }) as PostRow[];
+}
+
+async function fetchStoryImports(range: DateRange) {
+  const db = supabaseAdmin();
+  const { data, error } = await db
+    .from("instagram_story_imports")
+    .select("ig_id, published_at, views, reach, replies, shares, likes, profile_visits, sticker_taps")
+    .gte("published_at", range.start.toISOString())
+    .lt("published_at", range.end.toISOString());
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+async function fetchAccountDaily(range: DateRange) {
+  const db = supabaseAdmin();
+  const startIso = range.start.toISOString().slice(0, 10);
+  const endIso = new Date(range.end.getTime() - 1).toISOString().slice(0, 10);
+  const { data, error } = await db
+    .from("instagram_account_daily")
+    .select("date, followers_count, page_visits, account_reach, account_views")
+    .gte("date", startIso)
+    .lte("date", endIso)
+    .order("date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function getKpis(range: DateRange): Promise<Kpis> {
+  const looksLikeMonth =
+    range.end.getTime() - range.start.getTime() <= 32 * 24 * 60 * 60 * 1000;
+  if (looksLikeMonth && range.end.getTime() <= Date.now()) {
+    const { loadSnapshot } = await import("./snapshots");
+    const snap = await loadSnapshot(range);
+    if (snap) return snap;
+  }
+  return computeKpis(range);
+}
+
+export async function computeKpis(range: DateRange): Promise<Kpis> {
+  const [posts, stories, account, accountProfileViews] = await Promise.all([
+    fetchPostsInRange(range),
+    fetchStoryImports(range),
+    fetchAccountDaily(range),
+    fetchAccountProfileViewsTotal(
+      Math.floor(range.start.getTime() / 1000),
+      Math.floor(range.end.getTime() / 1000),
+    ),
+  ]);
+
+  let reels_posted = 0;
+  let static_posted = 0;
+  let reel_views = 0;
+  let static_views = 0;
+  let post_reach = 0;
+  let saves = 0;
+  let shares = 0;
+  let likes = 0;
+  let comments = 0;
+  let profile_visits = 0;
+  let api_story_views = 0;
+  let api_story_reach = 0;
+  let api_story_shares = 0;
+  let follows = 0;
+
+  const csvStoryIds = new Set(
+    (stories as StoryImportRow[]).map((s) => s.ig_id).filter(Boolean) as string[],
+  );
+
+  for (const p of posts) {
+    const m = p.post_metrics;
+    if (!m) continue;
+    if (p.kind === "reel") {
+      reels_posted++;
+      reel_views += m.views;
+    } else if (p.kind === "static") {
+      static_posted++;
+      static_views += m.views;
+    } else if (p.kind === "story") {
+      if (csvStoryIds.has(p.ig_id)) continue;
+      api_story_views += m.views;
+      api_story_reach += m.reach;
+      api_story_shares += m.shares;
+    }
+    if (p.kind !== "story") post_reach += m.reach;
+    saves += m.saves;
+    shares += m.shares;
+    likes += m.likes;
+    comments += m.comments;
+    follows += m.follows;
+    profile_visits += m.profile_visits;
+  }
+
+  let csv_story_views = 0;
+  let csv_story_reach = 0;
+  let csv_story_replies = 0;
+  let csv_story_shares = 0;
+  let csv_story_likes = 0;
+  let csv_story_profile_visits = 0;
+  let csv_story_sticker_taps = 0;
+  for (const s of stories) {
+    csv_story_views += s.views;
+    csv_story_reach += s.reach;
+    csv_story_replies += s.replies;
+    csv_story_shares += s.shares;
+    csv_story_likes += s.likes ?? 0;
+    csv_story_profile_visits += s.profile_visits ?? 0;
+    csv_story_sticker_taps += s.sticker_taps ?? 0;
+  }
+  const story_views = api_story_views + csv_story_views;
+  const story_reach = api_story_reach + csv_story_reach;
+  const replies = csv_story_replies;
+  shares += api_story_shares + csv_story_shares;
+  likes += csv_story_likes;
+  const story_profile_visits = csv_story_profile_visits;
+  profile_visits += csv_story_profile_visits;
+
+  const total_views = reel_views + static_views + story_views;
+  const organic_reach = post_reach + story_reach;
+
+  const page_visits_daily = account.reduce((a, d) => a + (d.page_visits ?? 0), 0);
+  const page_visits = accountProfileViews ?? page_visits_daily ?? profile_visits;
+
+  const followersPoints = account.filter((d) => d.followers_count != null);
+  const followers_end =
+    followersPoints.length > 0 ? followersPoints[followersPoints.length - 1].followers_count : null;
+  const followers_start = followersPoints.length > 0 ? followersPoints[0].followers_count : null;
+  const followers_delta =
+    followers_end != null && followers_start != null ? followers_end - followers_start : null;
+
+  const interactions =
+    likes +
+    comments +
+    saves +
+    shares +
+    replies +
+    follows +
+    story_profile_visits +
+    csv_story_sticker_taps;
+  const engagement_rate = total_views > 0 ? interactions / total_views : 0;
+
+  return {
+    reels_posted,
+    static_posted,
+    followers_end,
+    followers_delta,
+    page_visits,
+    organic_reach,
+    total_views,
+    reel_views,
+    story_views,
+    saves,
+    shares,
+    likes,
+    comments,
+    replies,
+    profile_visits,
+    engagement_rate,
+  };
+}
+
+export async function getTopPosts(range: DateRange, kind: "static" | "reel", limit: number) {
+  const posts = await fetchPostsInRange(range);
+  return posts
+    .filter((p) => p.kind === kind && p.post_metrics)
+    .map<TopPost>((p) => {
+      const m = p.post_metrics!;
+      const interactions = m.likes + m.comments + m.saves + m.shares;
+      return {
+        id: p.id,
+        ig_id: p.ig_id,
+        kind: p.kind as "static" | "reel",
+        caption: p.caption,
+        permalink: p.permalink,
+        thumbnail_url: p.thumbnail_url,
+        published_at: p.published_at,
+        views: m.views,
+        reach: m.reach,
+        likes: m.likes,
+        comments: m.comments,
+        shares: m.shares,
+        saves: m.saves,
+        engagement_rate: m.views > 0 ? interactions / m.views : 0,
+      };
+    })
+    .sort((a, b) => b.views - a.views)
+    .slice(0, limit);
+}
+
+export async function getMonthlyBars(): Promise<
+  { month: string; views: number; reach: number }[]
+> {
+  const db = supabaseAdmin();
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  const months = now.getMonth() + 1;
+
+  const [{ data: posts }, { data: stories }] = await Promise.all([
+    db
+      .from("instagram_posts")
+      .select("ig_id, kind, published_at, is_owner, is_boosted, instagram_post_metrics(views, reach)")
+      .eq("is_owner", true)
+      .eq("is_boosted", false)
+      .gte("published_at", start.toISOString()),
+    db
+      .from("instagram_story_imports")
+      .select("ig_id, published_at, views, reach")
+      .gte("published_at", start.toISOString()),
+  ]);
+
+  const buckets = new Map<string, { views: number; reach: number }>();
+  for (let i = 0; i < months; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    buckets.set(key, { views: 0, reach: 0 });
+  }
+  const bucketOf = (iso: string) => iso.slice(0, 7);
+
+  const csvStoryIds = new Set(
+    (stories ?? []).map((s) => s.ig_id).filter(Boolean) as string[],
+  );
+
+  for (const p of posts ?? []) {
+    if (p.kind === "story" && csvStoryIds.has(p.ig_id)) continue;
+    const key = bucketOf(p.published_at);
+    if (!buckets.has(key)) continue;
+    const m = Array.isArray(p.instagram_post_metrics)
+      ? p.instagram_post_metrics[0]
+      : p.instagram_post_metrics;
+    if (!m) continue;
+    const b = buckets.get(key)!;
+    b.views += m.views ?? 0;
+    b.reach += m.reach ?? 0;
+  }
+  for (const s of stories ?? []) {
+    const key = bucketOf(s.published_at);
+    if (!buckets.has(key)) continue;
+    const b = buckets.get(key)!;
+    b.views += s.views ?? 0;
+    b.reach += s.reach ?? 0;
+  }
+  return [...buckets.entries()].map(([month, v]) => ({ month, ...v }));
+}
+
+export async function getStoryDataAvailableFrom(): Promise<string | null> {
+  const db = supabaseAdmin();
+  const [{ data: imports }, { data: live }] = await Promise.all([
+    db
+      .from("instagram_story_imports")
+      .select("published_at")
+      .order("published_at", { ascending: true })
+      .limit(1),
+    db
+      .from("instagram_posts")
+      .select("published_at")
+      .eq("kind", "story")
+      .order("published_at", { ascending: true })
+      .limit(1),
+  ]);
+  const candidates = [imports?.[0]?.published_at, live?.[0]?.published_at].filter(
+    Boolean,
+  ) as string[];
+  if (candidates.length === 0) return null;
+  candidates.sort();
+  return candidates[0].slice(0, 10);
+}
