@@ -96,6 +96,50 @@ export const repeatRateData: RepeatRateRow[] = [
   { id: 'picta-uk',    app_package: 'com.pictarine.webApp.picta.uk',    partner: 'Picta UK',  platform: 'Web',     base_m3: 405,    repeat_rate_m3: 1.7,  base_m6: 399,    repeat_rate_m6: 1.3,  base_m9: 0,      repeat_rate_m9: null },
 ];
 
+// ─── Monthly users data ───────────────────────────────────────────────────────
+
+export interface MonthlyRow {
+  month: string;
+  partner: 'CVS' | 'Walgreens';
+  platform: 'iOS' | 'Android' | 'Web';
+  nb_new: number;
+  nb_returning: number;
+}
+
+export const monthlyData: MonthlyRow[] = [
+  // CVS
+  { month: 'Jan', partner: 'CVS',       platform: 'iOS',     nb_new: 12230, nb_returning: 34837 },
+  { month: 'Jan', partner: 'CVS',       platform: 'Android', nb_new: 2740,  nb_returning: 2206  },
+  { month: 'Jan', partner: 'CVS',       platform: 'Web',     nb_new: 33733, nb_returning: 14174 },
+  { month: 'Jan', partner: 'Walgreens', platform: 'iOS',     nb_new: 5038,  nb_returning: 35795 },
+  { month: 'Jan', partner: 'Walgreens', platform: 'Android', nb_new: 928,   nb_returning: 4333  },
+  { month: 'Jan', partner: 'Walgreens', platform: 'Web',     nb_new: 10831, nb_returning: 2765  },
+  { month: 'Fév', partner: 'CVS',       platform: 'iOS',     nb_new: 16917, nb_returning: 36158 },
+  { month: 'Fév', partner: 'CVS',       platform: 'Android', nb_new: 3113,  nb_returning: 2316  },
+  { month: 'Fév', partner: 'CVS',       platform: 'Web',     nb_new: 34314, nb_returning: 12946 },
+  { month: 'Fév', partner: 'Walgreens', platform: 'iOS',     nb_new: 5635,  nb_returning: 35192 },
+  { month: 'Fév', partner: 'Walgreens', platform: 'Android', nb_new: 778,   nb_returning: 3930  },
+  { month: 'Fév', partner: 'Walgreens', platform: 'Web',     nb_new: 9822,  nb_returning: 2335  },
+  { month: 'Mar', partner: 'CVS',       platform: 'iOS',     nb_new: 14216, nb_returning: 33077 },
+  { month: 'Mar', partner: 'CVS',       platform: 'Android', nb_new: 2442,  nb_returning: 2257  },
+  { month: 'Mar', partner: 'CVS',       platform: 'Web',     nb_new: 40665, nb_returning: 17211 },
+  { month: 'Mar', partner: 'Walgreens', platform: 'iOS',     nb_new: 4048,  nb_returning: 30356 },
+  { month: 'Mar', partner: 'Walgreens', platform: 'Android', nb_new: 687,   nb_returning: 3621  },
+  { month: 'Mar', partner: 'Walgreens', platform: 'Web',     nb_new: 4735,  nb_returning: 1525  },
+  { month: 'Avr', partner: 'CVS',       platform: 'iOS',     nb_new: 16446, nb_returning: 34738 },
+  { month: 'Avr', partner: 'CVS',       platform: 'Android', nb_new: 2223,  nb_returning: 2203  },
+  { month: 'Avr', partner: 'CVS',       platform: 'Web',     nb_new: 35198, nb_returning: 17428 },
+  { month: 'Avr', partner: 'Walgreens', platform: 'iOS',     nb_new: 3673,  nb_returning: 31340 },
+  { month: 'Avr', partner: 'Walgreens', platform: 'Android', nb_new: 697,   nb_returning: 3639  },
+  { month: 'Avr', partner: 'Walgreens', platform: 'Web',     nb_new: 2862,  nb_returning: 1183  },
+  { month: 'Mai', partner: 'CVS',       platform: 'iOS',     nb_new: 16710, nb_returning: 36275 },
+  { month: 'Mai', partner: 'CVS',       platform: 'Android', nb_new: 2516,  nb_returning: 2277  },
+  { month: 'Mai', partner: 'CVS',       platform: 'Web',     nb_new: 29041, nb_returning: 14922 },
+  { month: 'Mai', partner: 'Walgreens', platform: 'iOS',     nb_new: 5495,  nb_returning: 32566 },
+  { month: 'Mai', partner: 'Walgreens', platform: 'Android', nb_new: 757,   nb_returning: 3283  },
+  { month: 'Mai', partner: 'Walgreens', platform: 'Web',     nb_new: 13732, nb_returning: 4908  },
+];
+
 export function parseCampaignLabel(name: string): string {
   // e.g. "20260501_email_mday-exclusive-offer_cvs" → "Mday Exclusive Offer · CVS"
   const parts = name.split('_');

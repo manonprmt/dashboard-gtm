@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { klaviyoData, repeatRateData, incrementData, parseCampaignLabel, parseSegment, type KlaviyoCampaign, type RepeatRateRow, type IncrementRow } from '@/lib/klaviyoData';
+import { klaviyoData, repeatRateData, incrementData, monthlyData, parseCampaignLabel, parseSegment, type KlaviyoCampaign, type RepeatRateRow, type IncrementRow, type MonthlyRow } from '@/lib/klaviyoData';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -252,93 +252,176 @@ function IncrementView() {
   );
 }
 
-// ─── Tab 4: Repeat Rate ───────────────────────────────────────────────────────
+// ─── Tab 4: Repeat Rate (CVS & Walgreens only, visual) ───────────────────────
 
-function RepeatRateCell({ value }: { value: number | null }) {
-  if (value === null) return <td className="px-3 py-2.5 text-center text-gray-300 text-xs">—</td>;
-  const color = value >= 30 ? 'text-green-700 bg-green-50' : value >= 15 ? 'text-amber-700 bg-amber-50' : value >= 7 ? 'text-blue-700 bg-blue-50' : 'text-gray-500';
+const RATE_COLOR = (v: number) =>
+  v >= 30 ? 'bg-green-500' : v >= 20 ? 'bg-violet-500' : v >= 10 ? 'bg-amber-400' : 'bg-gray-300';
+const RATE_TEXT = (v: number) =>
+  v >= 30 ? 'text-green-700' : v >= 20 ? 'text-violet-700' : v >= 10 ? 'text-amber-700' : 'text-gray-500';
+
+function MiniBar({ value, max }: { value: number; max: number }) {
   return (
-    <td className="px-3 py-2.5 text-center">
-      <span className={`inline-block px-2 py-0.5 rounded-lg text-sm font-bold ${color}`}>{fmtPct(value)}</span>
-    </td>
+    <div className="w-full bg-gray-100 rounded-full h-1.5 mt-0.5">
+      <div className={`h-1.5 rounded-full ${RATE_COLOR(value)}`} style={{ width: `${Math.min((value / max) * 100, 100)}%` }} />
+    </div>
   );
 }
 
 function RepeatRateView() {
-  const partners = [...new Set(repeatRateData.map((r) => r.partner.split(' ')[0]))];
-  const [filterPartner, setFilterPartner] = useState<string>('Tous');
+  const partners = ['CVS', 'Walgreens'] as const;
+  const platforms = ['iOS', 'Android', 'Web'] as const;
 
-  const filtered = useMemo(() =>
-    filterPartner === 'Tous' ? repeatRateData : repeatRateData.filter((r) => r.partner.startsWith(filterPartner)),
-    [filterPartner]
-  );
+  const grid = useMemo(() => {
+    const cvs = repeatRateData.filter((r) => r.partner === 'CVS');
+    const wg  = repeatRateData.filter((r) => r.partner === 'Walgreens');
+    const maxRate = Math.max(...[...cvs, ...wg].map((r) => r.repeat_rate_m9 ?? r.repeat_rate_m6));
+    return { cvs, wg, maxRate };
+  }, []);
 
   return (
     <div className="space-y-4">
-      {/* Filter */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-500 font-medium">Partenaire :</span>
-        {['Tous', ...partners].map((p) => (
-          <button
-            key={p}
-            onClick={() => setFilterPartner(p)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-              filterPartner === p
-                ? 'bg-violet-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
-
       {/* Legend */}
       <div className="flex items-center gap-4 text-xs text-gray-500">
-        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded bg-green-100 border border-green-300" /> ≥ 30%</span>
-        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded bg-amber-100 border border-amber-300" /> 15–30%</span>
-        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded bg-blue-100 border border-blue-300" /> 7–15%</span>
-        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded bg-gray-100 border border-gray-200" /> &lt; 7%</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500" /> ≥ 30%</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-violet-500" /> 20–30%</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" /> 10–20%</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-300" /> &lt; 10%</span>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto scrollbar-thin">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Partenaire</th>
-                <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Plateforme</th>
-                <th className="px-3 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Base M3</th>
-                <th className="px-3 py-2.5 text-center text-xs font-semibold text-violet-600 uppercase tracking-wide whitespace-nowrap">Repeat M3</th>
-                <th className="px-3 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Base M6</th>
-                <th className="px-3 py-2.5 text-center text-xs font-semibold text-violet-600 uppercase tracking-wide whitespace-nowrap">Repeat M6</th>
-                <th className="px-3 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Base M9</th>
-                <th className="px-3 py-2.5 text-center text-xs font-semibold text-violet-600 uppercase tracking-wide whitespace-nowrap">Repeat M9</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map((row) => (
-                <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-3 py-2.5 font-semibold text-gray-800 whitespace-nowrap">{row.partner}</td>
-                  <td className="px-3 py-2.5">
-                    <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${
-                      row.platform === 'iOS' ? 'bg-gray-100 text-gray-700' :
-                      row.platform === 'Android' ? 'bg-green-100 text-green-700' :
-                      'bg-blue-100 text-blue-700'
-                    }`}>
-                      {row.platform === 'iOS' ? '🍎' : row.platform === 'Android' ? '🤖' : '🌐'} {row.platform}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-right text-gray-500 tabular-nums text-xs">{row.base_m3 > 0 ? fmt(row.base_m3) : '—'}</td>
-                  <RepeatRateCell value={row.repeat_rate_m3} />
-                  <td className="px-3 py-2.5 text-right text-gray-500 tabular-nums text-xs">{row.base_m6 > 0 ? fmt(row.base_m6) : '—'}</td>
-                  <RepeatRateCell value={row.repeat_rate_m6} />
-                  <td className="px-3 py-2.5 text-right text-gray-500 tabular-nums text-xs">{row.base_m9 > 0 ? fmt(row.base_m9) : '—'}</td>
-                  <RepeatRateCell value={row.repeat_rate_m9} />
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Grid: platform rows × partner columns */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {(['cvs', 'wg'] as const).map((key) => {
+          const partnerName = key === 'cvs' ? 'CVS' : 'Walgreens';
+          const rows = key === 'cvs' ? grid.cvs : grid.wg;
+          return (
+            <div key={key} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className={`px-5 py-3 border-b ${key === 'cvs' ? 'bg-blue-50 border-blue-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                <h3 className={`font-bold text-sm uppercase tracking-widest ${key === 'cvs' ? 'text-blue-700' : 'text-emerald-700'}`}>{partnerName}</h3>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {platforms.map((platform) => {
+                  const row = rows.find((r) => r.platform === platform);
+                  if (!row) return null;
+                  return (
+                    <div key={platform} className="px-5 py-4">
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <span className="text-sm">{platformIcon(platform)}</span>
+                        <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">{platform}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          { label: 'M3', value: row.repeat_rate_m3 },
+                          { label: 'M6', value: row.repeat_rate_m6 },
+                          { label: 'M9', value: row.repeat_rate_m9 },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="text-center">
+                            <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">{label}</p>
+                            {value !== null ? (
+                              <>
+                                <p className={`text-xl font-bold leading-none ${RATE_TEXT(value)}`}>{value}%</p>
+                                <MiniBar value={value} max={grid.maxRate + 5} />
+                              </>
+                            ) : (
+                              <p className="text-gray-300 text-sm">—</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Tab 5: Évolution mensuelle ───────────────────────────────────────────────
+
+const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai'];
+
+function MonthlyView() {
+  const [partner, setPartner] = useState<'CVS' | 'Walgreens'>('CVS');
+  const [platform, setPlatform] = useState<'iOS' | 'Android' | 'Web'>('iOS');
+
+  const filtered = useMemo(() =>
+    monthlyData.filter((r) => r.partner === partner && r.platform === platform),
+    [partner, platform]
+  );
+
+  const maxVal = useMemo(() =>
+    Math.max(...filtered.map((r) => r.nb_new + r.nb_returning)),
+    [filtered]
+  );
+
+  const totalNew      = filtered.reduce((s, r) => s + r.nb_new, 0);
+  const totalReturning = filtered.reduce((s, r) => s + r.nb_returning, 0);
+
+  return (
+    <div className="space-y-5">
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4 items-center">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 font-medium">Partenaire :</span>
+          {(['CVS', 'Walgreens'] as const).map((p) => (
+            <button key={p} onClick={() => setPartner(p)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${partner === p ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              {p}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 font-medium">Plateforme :</span>
+          {(['iOS', 'Android', 'Web'] as const).map((pl) => (
+            <button key={pl} onClick={() => setPlatform(pl)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${platform === pl ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              {platformIcon(pl)} {pl}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-4">
+        <KpiCard label="Nouveaux clients YTD" value={fmt(totalNew)} icon={<IconSend />} color="bg-violet-100 text-violet-600" />
+        <KpiCard label="Clients récurrents YTD" value={fmt(totalReturning)} icon={<IconRepeat />} color="bg-emerald-100 text-emerald-600" />
+      </div>
+
+      {/* Bar chart */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-sm font-bold text-gray-800">New vs Returning — {partner} · {platform}</h3>
+          <div className="flex items-center gap-4 text-xs text-gray-500">
+            <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm bg-violet-500" /> Nouveaux</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm bg-emerald-400" /> Récurrents</span>
+          </div>
+        </div>
+        <div className="flex items-end justify-around gap-3 h-48">
+          {filtered.map((row) => {
+            const newH  = maxVal > 0 ? (row.nb_new / maxVal) * 100 : 0;
+            const retH  = maxVal > 0 ? (row.nb_returning / maxVal) * 100 : 0;
+            const total = row.nb_new + row.nb_returning;
+            return (
+              <div key={row.month} className="flex-1 flex flex-col items-center gap-1 group">
+                <div className="w-full flex flex-col justify-end h-40 gap-0.5 relative">
+                  {/* Tooltip */}
+                  <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] rounded-lg px-2 py-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none text-center">
+                    <p className="font-semibold">{row.month}</p>
+                    <p>Nvx : {fmt(row.nb_new)}</p>
+                    <p>Ret : {fmt(row.nb_returning)}</p>
+                    <p className="text-gray-300">Total : {fmt(total)}</p>
+                  </div>
+                  <div className="w-full rounded-t-sm bg-violet-500 transition-all" style={{ height: `${newH}%` }} />
+                  <div className="w-full rounded-t-sm bg-emerald-400 transition-all" style={{ height: `${retH}%` }} />
+                </div>
+                <span className="text-xs font-medium text-gray-500">{row.month}</span>
+                <span className="text-[10px] text-gray-400">{fmt(total)}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -347,13 +430,14 @@ function RepeatRateView() {
 
 // ─── Main dashboard ───────────────────────────────────────────────────────────
 
-type Tab = 'global' | 'detail' | 'increment' | 'repeat';
+type Tab = 'global' | 'detail' | 'increment' | 'repeat' | 'monthly';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'global',    label: 'Vue globale' },
   { id: 'detail',    label: 'Détail campagnes' },
-  { id: 'increment', label: 'Incrément YTD' },
+  { id: 'increment', label: 'Incrément Klaviyo' },
   { id: 'repeat',    label: 'Repeat Rate' },
+  { id: 'monthly',   label: 'Évolution mensuelle' },
 ];
 
 export default function KlaviyoDashboard() {
@@ -381,7 +465,7 @@ export default function KlaviyoDashboard() {
     return { nb_sent: totalSent, taux_open_pct: totalSent > 0 ? (totalOpen / totalSent) * 100 : 0, orders: rows.reduce((s, r) => s + r.orders_attribuees, 0), ca: rows.reduce((s, r) => s + r.ca_attribue, 0) };
   }, [filtered]);
 
-  const showDateFilter = activeTab !== 'repeat';
+  const showDateFilter = activeTab === 'global' || activeTab === 'detail' || activeTab === 'increment';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -431,6 +515,7 @@ export default function KlaviyoDashboard() {
         {activeTab === 'detail' && <CampaignTable data={filtered} />}
         {activeTab === 'increment' && <IncrementView />}
         {activeTab === 'repeat' && <RepeatRateView />}
+        {activeTab === 'monthly' && <MonthlyView />}
       </div>
     </div>
   );
