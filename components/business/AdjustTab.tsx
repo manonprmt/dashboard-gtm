@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { adjustWG, adjustCVS, CHANNEL_COLORS, channelLabel, type AdjustRow } from '@/lib/adjustData';
 
 const fmt  = (n: number) => new Intl.NumberFormat('fr-FR').format(Math.round(n));

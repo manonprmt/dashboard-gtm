@@ -173,8 +173,7 @@ function IncrementView() {
   const totalIncrement = incrementData.reduce((s, r) => s + r.nb_orders_increment, 0);
   const avgUplift = (incrementData.reduce((s, r) => s + r.increment_pts, 0) / incrementData.length).toFixed(1);
 
-  const visualPartners = ['CVS', 'Walgreens'];
-  const visualData = useMemo(() => visualPartners.map((partner) => {
+  const visualData = useMemo(() => ['CVS', 'Walgreens'].map((partner) => {
     const rows = incrementData.filter((r) => r.partner === partner);
     const maxRate = Math.max(...rows.map((r) => r.repeat_rate_exposed));
     return { partner, rows, maxRate };
